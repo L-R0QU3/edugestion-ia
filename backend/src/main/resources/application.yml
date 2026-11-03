@@ -1,0 +1,40 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/edugestion}
+    username: ${SPRING_DATASOURCE_USERNAME:edugestion}
+    password: ${SPRING_DATASOURCE_PASSWORD:edugestion}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+  jackson:
+    default-property-inclusion: non_null
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:1800000}
+  admin:
+    email: ${ADMIN_EMAIL:admin@edugestion.local}
+    password: ${ADMIN_PASSWORD:Admin123!Change}
+  ai:
+    url: ${AI_SERVICE_URL:http://localhost:5000}
+    token: ${AI_SERVICE_TOKEN:internal_token}

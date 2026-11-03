@@ -1,0 +1,89 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: edugestion-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      edugestion-net:
+        ipv4_address: 172.20.0.2
+
+  backend:
+    build: ./backend
+    container_name: edugestion-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy # <-- Espera a que la IA esté lista
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      AI_SERVICE_URL: http://172.20.0.5:5000 # <-- IP FIJA EN VEZ DE NOMBRE
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      edugestion-net:
+        ipv4_address: 172.20.0.3
+
+  ai-service:
+    build: ./ai-service
+    container_name: edugestion-ai
+    environment:
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 5s # <-- Aceleramos la revisión
+      timeout: 5s
+      retries: 10
+    networks:
+      edugestion-net:
+        ipv4_address: 172.20.0.5 # <-- IP FIJA ASIGNADA
+
+  frontend:
+    build: ./frontend
+    container_name: edugestion-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    networks:
+      edugestion-net:
+        ipv4_address: 172.20.0.4
+
+volumes:
+  pg_data:
+
+# Configuración de la red interna
+networks:
+  edugestion-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
