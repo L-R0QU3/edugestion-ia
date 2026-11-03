@@ -6,6 +6,7 @@ export default function AcademicPage() {
   const [asignaturas, setAsignaturas] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
   const [docentes, setDocentes] = useState([]);
+  const [apoderados, setApoderados] = useState([]);
   
   // Estados de formularios
   const [nivel, setNivel] = useState('');
@@ -25,16 +26,18 @@ export default function AcademicPage() {
 
   const cargarDatos = async () => {
     try {
-      const [resCursos, resAsig, resEst, resDoc] = await Promise.all([
+      const [resCursos, resAsig, resEst, resDoc, resApo] = await Promise.all([
         api('/academic/cursos'),
         api('/academic/asignaturas'),
         api('/users?rol=ESTUDIANTE'),
-        api('/users?rol=DOCENTE')
+        api('/users?rol=DOCENTE'),
+        api('/users?rol=APODERADO') // <-- Agregado aquí
       ]);
       setCursos(resCursos);
       setAsignaturas(resAsig);
       setEstudiantes(resEst);
       setDocentes(resDoc);
+      setApoderados(resApo); // <-- Seteado aquí
     } catch (e) { alert(e.message); }
   };
 
@@ -144,6 +147,30 @@ export default function AcademicPage() {
           <button type="submit" style={btnStyle}>Asignar</button>
         </form>
       </div>
+
+      {/* VINCULAR APODERADO */}
+      <div style={{ background: 'white', padding: 20, borderRadius: 8, marginTop: 24, boxShadow: 'var(--shadow-sm)' }}>
+        <h2 style={{ fontSize: 18, marginTop: 0 }}>Vincular Apoderado con Estudiante</h2>
+        <form onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              await api('/guardians/link', { method: 'POST', body: JSON.stringify({ apoderadoId: e.target.apo.value, estudianteId: e.target.est.value }) });
+              alert('Vinculación exitosa');
+              e.target.reset();
+            } catch (err) { alert(err.message); }
+        }} style={{ display: 'flex', gap: 10 }}>
+          <select name="apo" required style={inputStyle}>
+            <option value="">Seleccione Apoderado...</option>
+            {apoderados.map(a => <option key={a.id} value={a.id}>{a.nombres} {a.apellidos}</option>)}
+          </select>
+          <select name="est" required style={inputStyle}>
+            <option value="">Seleccione Estudiante...</option>
+            {estudiantes.map(e => <option key={e.id} value={e.id}>{e.nombres} {e.apellidos}</option>)}
+          </select>
+          <button type="submit" style={btnStyle}>Vincular</button>
+        </form>
+      </div>
+
     </div>
   );
 }

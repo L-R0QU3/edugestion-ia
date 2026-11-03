@@ -1,5 +1,6 @@
 package cl.edu.edugestion.academic;
 
+import cl.edu.edugestion.guardian.GuardianStudentRepository;
 import cl.edu.edugestion.users.User;
 import cl.edu.edugestion.users.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,13 @@ public class GradeController {
     private final CalificacionRepository grades;
     private final CursoAsignaturaRepository cursosAsig;
     private final UserRepository users;
+    private final GuardianStudentRepository guardianRepo;
 
-    public GradeController(CalificacionRepository grades, CursoAsignaturaRepository cursosAsig, UserRepository users) {
+    public GradeController(CalificacionRepository grades, CursoAsignaturaRepository cursosAsig, UserRepository users, GuardianStudentRepository guardianRepo) {
         this.grades = grades;
         this.cursosAsig = cursosAsig;
         this.users = users;
+        this.guardianRepo = guardianRepo;
     }
 
     @GetMapping("/mis-asignaturas")
@@ -55,5 +58,22 @@ public class GradeController {
         return grades.findAll().stream()
             .filter(c -> c.getEstudianteId().equals(estudiante.getId()))
             .toList();
+    }
+
+    @GetMapping("/pupilo/{estudianteId}")
+    @PreAuthorize("hasRole('APODERADO')")
+    public ResponseEntity<?> notasPupilo(@PathVariable Long estudianteId, Authentication auth) {
+        User apoderado = users.findByEmail(auth.getName()).orElseThrow();
+        
+        // VALIDACIÓN DE SEGURIDAD CRÍTICA:
+        if (!guardianRepo.existsByApoderadoIdAndEstudianteId(apoderado.getId(), estudianteId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "No tienes permiso para ver las notas de este estudiante."));
+        }
+
+        List<Calificacion> notas = grades.findAll().stream()
+            .filter(c -> c.getEstudianteId().equals(estudianteId))
+            .toList();
+            
+        return ResponseEntity.ok(notas);
     }
 }

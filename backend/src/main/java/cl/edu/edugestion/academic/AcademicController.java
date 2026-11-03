@@ -1,5 +1,7 @@
 package cl.edu.edugestion.academic;
 
+import cl.edu.edugestion.users.User;
+import cl.edu.edugestion.users.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,13 +16,16 @@ public class AcademicController {
     private final AsignaturaRepository asignaturas;
     private final MatriculaRepository matriculas;
     private final CursoAsignaturaRepository cursoAsignaturas;
+    private final UserRepository users; // <-- FALTABA ESTO
 
     public AcademicController(CursoRepository cursos, AsignaturaRepository asignaturas, 
-                              MatriculaRepository matriculas, CursoAsignaturaRepository cursoAsignaturas) {
+                              MatriculaRepository matriculas, CursoAsignaturaRepository cursoAsignaturas,
+                              UserRepository users) {
         this.cursos = cursos;
         this.asignaturas = asignaturas;
         this.matriculas = matriculas;
         this.cursoAsignaturas = cursoAsignaturas;
+        this.users = users; // <-- Y ESTO
     }
 
     // --- CURSOS ---
@@ -73,5 +78,15 @@ public class AcademicController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Esta asignatura ya está asignada a este curso"));
         }
+    }
+
+    // --- ESTUDIANTES POR CURSO ---
+    @GetMapping("/cursos/{cursoId}/estudiantes")
+    public List<User> estudiantesPorCurso(@PathVariable Long cursoId) {
+        List<Long> estudianteIds = matriculas.findAll().stream()
+            .filter(m -> m.getCursoId().equals(cursoId))
+            .map(m -> m.getEstudianteId())
+            .toList();
+        return users.findAllById(estudianteIds);
     }
 }

@@ -99,3 +99,63 @@ CREATE TABLE preguntas (
   enunciado TEXT NOT NULL,
   tipo VARCHAR(50) DEFAULT 'DESARROLLO'
 );
+
+CREATE TABLE guardian_students (
+  id BIGSERIAL PRIMARY KEY,
+  apoderado_id BIGINT NOT NULL REFERENCES usuarios(id),
+  estudiante_id BIGINT NOT NULL REFERENCES usuarios(id),
+  parentesco VARCHAR(50) DEFAULT 'Tutor', -- Ej: Padre, Madre, Tutor
+  UNIQUE(apoderado_id, estudiante_id)
+);
+
+CREATE TABLE asistencias (
+  id BIGSERIAL PRIMARY KEY,
+  estudiante_id BIGINT NOT NULL REFERENCES usuarios(id),
+  curso_id BIGINT NOT NULL REFERENCES cursos(id),
+  fecha DATE NOT NULL,
+  estado VARCHAR(20) NOT NULL, -- PRESENTE, AUSENTE, ATRASADO
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(estudiante_id, curso_id, fecha) -- Evita duplicados en el mismo día
+);
+
+CREATE TABLE anotaciones (
+  id BIGSERIAL PRIMARY KEY,
+  estudiante_id BIGINT NOT NULL REFERENCES usuarios(id),
+  docente_id BIGINT NOT NULL REFERENCES usuarios(id),
+  tipo VARCHAR(20) NOT NULL, -- POSITIVA, NEGATIVA, NEUTRA
+  descripcion TEXT NOT NULL,
+  visible_apoderado BOOLEAN DEFAULT TRUE,
+  fecha TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE comunicados (
+  id BIGSERIAL PRIMARY KEY,
+  titulo VARCHAR(200) NOT NULL,
+  contenido TEXT NOT NULL,
+  autor_id BIGINT NOT NULL REFERENCES usuarios(id),
+  destinatario VARCHAR(50) NOT NULL, -- TODOS, ESTUDIANTES, DOCENTES, APODERADOS
+  fecha TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE horarios (
+  id BIGSERIAL PRIMARY KEY,
+  curso_id BIGINT NOT NULL REFERENCES cursos(id),
+  asignatura_id BIGINT NOT NULL REFERENCES asignaturas(id),
+  docente_id BIGINT NOT NULL REFERENCES usuarios(id),
+  dia_semana VARCHAR(20) NOT NULL, -- LUNES, MARTES, etc.
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  sala VARCHAR(50)
+);
+
+CREATE TABLE casos_convivencia (
+  id BIGSERIAL PRIMARY KEY,
+  estudiante_id BIGINT NOT NULL REFERENCES usuarios(id),
+  reportado_por_id BIGINT NOT NULL REFERENCES usuarios(id),
+  categoria VARCHAR(100) NOT NULL, -- Ej: Conflicto, Bullying, Rendimiento, Otro
+  descripcion TEXT NOT NULL,
+  estado VARCHAR(30) NOT NULL DEFAULT 'REGISTRADO', -- REGISTRADO, EN_REVISION, EN_SEGUIMIENTO, CERRADO
+  acciones_tomadas TEXT,
+  fecha_registro TIMESTAMPTZ DEFAULT now(),
+  fecha_actualizacion TIMESTAMPTZ
+);

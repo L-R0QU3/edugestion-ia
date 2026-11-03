@@ -12,6 +12,7 @@ export default function MainLayout({ children }) {
         
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
           <NavItem to="/dashboard">Dashboard</NavItem>
+          <NavItem to="/communications">Comunicados</NavItem>
           
           {/* MENÚ PARA DIRECCIÓN */}
           {user?.rol === 'DIRECCION' && (
@@ -19,6 +20,8 @@ export default function MainLayout({ children }) {
               <NavItem to="/academic">Académico</NavItem>
               <NavItem to="/users">Usuarios</NavItem>
               <NavItem to="/library">Biblioteca</NavItem>
+              <NavItem to="/schedules">Horarios</NavItem>
+              <NavItem to="/coexistence">Convivencia</NavItem>
             </>
           )}
 
@@ -26,7 +29,10 @@ export default function MainLayout({ children }) {
           {user?.rol === 'DOCENTE' && (
               <>
                 <NavItem to="/grades">Calificaciones</NavItem>
+                <NavItem to="/attendance">Pasar Lista</NavItem>
+                <NavItem to="/annotations">Anotaciones</NavItem>
                 <NavItem to="/ai">Asistente IA</NavItem>
+                <NavItem to="/schedules">Horarios</NavItem>
               </>
           )}
 
@@ -34,8 +40,15 @@ export default function MainLayout({ children }) {
           {user?.rol === 'ESTUDIANTE' && (
             <>
               <NavItem to="/my-grades">Mis Notas</NavItem>
+              <NavItem to="/my-attendance">Mi Asistencia</NavItem>
               <NavItem to="/library">Biblioteca</NavItem>
+              <NavItem to="/schedules">Horarios</NavItem>
             </>
+          )}
+
+          {/* MENÚ PARA APODERADOS */}
+          {user?.rol === 'APODERADO' && (
+            <NavItem to="/guardian">Mis Pupilos</NavItem>
           )}
 
           {/* MENÚ PARA BIBLIOTECARIO */}

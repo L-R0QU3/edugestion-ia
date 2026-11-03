@@ -16,9 +16,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    networks:
-      edugestion-net:
-        ipv4_address: 172.20.0.2
 
   backend:
     build: ./backend
@@ -27,7 +24,7 @@ services:
       postgres:
         condition: service_healthy
       ai-service:
-        condition: service_healthy # <-- Espera a que la IA esté lista
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -36,7 +33,7 @@ services:
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      AI_SERVICE_URL: http://172.20.0.5:5000 # <-- IP FIJA EN VEZ DE NOMBRE
+      AI_SERVICE_URL: http://ai-service:5000 # <-- VOLVEMOS AL NOMBRE
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
     ports:
       - "8080:8080"
@@ -45,9 +42,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-    networks:
-      edugestion-net:
-        ipv4_address: 172.20.0.3
 
   ai-service:
     build: ./ai-service
@@ -59,12 +53,9 @@ services:
       - "5000:5000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
-      interval: 5s # <-- Aceleramos la revisión
+      interval: 5s
       timeout: 5s
       retries: 10
-    networks:
-      edugestion-net:
-        ipv4_address: 172.20.0.5 # <-- IP FIJA ASIGNADA
 
   frontend:
     build: ./frontend
@@ -73,17 +64,6 @@ services:
       - backend
     ports:
       - "5173:80"
-    networks:
-      edugestion-net:
-        ipv4_address: 172.20.0.4
 
 volumes:
   pg_data:
-
-# Configuración de la red interna
-networks:
-  edugestion-net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
