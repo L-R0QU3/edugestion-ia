@@ -99,7 +99,3 @@ EduGestión IA es un sistema integral de gestión escolar. Actualmente nos encon
 3. **Reglas Académicas:** Permitir a la Dirección configurar si el promedio es semestral, trimestral, o si las notas tienen ponderaciones.
 4. **Biblioteca:** Añadir lógica de renovaciones y bloqueos por atrasos.
 5. **Reportes:** Implementar descarga de boletines de notas en PDF.
-
-## 6. Instrucción para la IA en nuevos chats
-"Copia y pega esto al inicio de un nuevo chat junto con este archivo:
-> *Hola, estamos desarrollando EduGestión IA. Te adjunto el `CONTEXTO_PROYECTO.md` (v1.0.1). Quiero que actuemos como Tech Leads para implementar la siguiente mejora del Roadmap: [INSERTAR MEJORA AQUÍ].*"
