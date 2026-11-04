@@ -26,22 +26,19 @@ public class AttendanceController {
         this.guardianRepo = guardianRepo;
     }
 
-    // Docente obtiene la asistencia de un curso en una fecha
     @GetMapping("/curso/{cursoId}/fecha/{fecha}")
-    @PreAuthorize("hasAnyRole('DOCENTE', 'DIRECCION')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'JEFE_UTP', 'COORDINADOR', 'PROFESOR_JEFE', 'PROFESOR_ASIGNATURA')")
     public List<Asistencia> obtenerAsistencia(@PathVariable Long cursoId, @PathVariable String fecha) {
         return asistencias.findByCursoIdAndFecha(cursoId, LocalDate.parse(fecha));
     }
 
-    // Docente guarda la asistencia (borra la anterior si existía y guarda la nueva)
     @PostMapping
-    @PreAuthorize("hasRole('DOCENTE')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'JEFE_UTP', 'COORDINADOR', 'PROFESOR_JEFE', 'PROFESOR_ASIGNATURA')")
     public ResponseEntity<?> registrarAsistencia(@RequestBody Map<String, Object> body) {
         Long cursoId = Long.valueOf(body.get("cursoId").toString());
         LocalDate fecha = LocalDate.parse(body.get("fecha").toString());
         List<Map<String, Object>> registros = (List<Map<String, Object>>) body.get("registros");
 
-        // Limpiamos los registros previos de ese día para no duplicar
         asistencias.deleteByCursoIdAndFecha(cursoId, fecha);
 
         for (Map<String, Object> reg : registros) {
@@ -56,7 +53,6 @@ public class AttendanceController {
         return ResponseEntity.ok(Map.of("mensaje", "Asistencia guardada con éxito"));
     }
 
-    // Estudiante ve su propia asistencia
     @GetMapping("/mis-asistencias")
     @PreAuthorize("hasRole('ESTUDIANTE')")
     public List<Asistencia> misAsistencias(Authentication auth) {
@@ -64,7 +60,6 @@ public class AttendanceController {
         return asistencias.findByEstudianteId(est.getId());
     }
 
-    // Apoderado ve la asistencia de su pupilo
     @GetMapping("/pupilo/{estudianteId}")
     @PreAuthorize("hasRole('APODERADO')")
     public ResponseEntity<?> asistenciaPupilo(@PathVariable Long estudianteId, Authentication auth) {

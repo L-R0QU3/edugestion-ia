@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/toast/ToastContext';
 
 export default function CommunicationsPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [comunicados, setComunicados] = useState([]);
   
   const [titulo, setTitulo] = useState('');
   const [contenido, setContenido] = useState('');
   const [destinatario, setDestinatario] = useState('TODOS');
 
-  const cargar = () => api('/comunicados').then(setComunicados).catch(console.error);
+  const cargar = () => api('/comunicados').then(setComunicados).catch((err) => showToast(err.message, 'error'));
 
   useEffect(() => { cargar(); }, []);
 
@@ -20,8 +22,8 @@ export default function CommunicationsPage() {
       await api('/comunicados', { method: 'POST', body: JSON.stringify({ titulo, contenido, destinatario }) });
       setTitulo(''); setContenido(''); setDestinatario('TODOS');
       cargar();
-      alert('Comunicado publicado');
-    } catch (err) { alert(err.message); }
+      showToast('Comunicado publicado', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
   };
 
   const puedeCrear = user?.rol === 'DIRECCION' || user?.rol === 'DOCENTE';
@@ -36,7 +38,7 @@ export default function CommunicationsPage() {
           <input placeholder="Título del comunicado" required value={titulo} onChange={e => setTitulo(e.target.value)} style={{...inp, width: '100%', marginBottom: 10}} />
           <textarea placeholder="Escribe el mensaje aquí..." required value={contenido} onChange={e => setContenido(e.target.value)} style={{...inp, width: '100%', height: 100, marginBottom: 10, resize: 'none'}} />
           
-            <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10 }}>
             <select value={destinatario} onChange={e => setDestinatario(e.target.value)} style={inp}>
               <option value="TODOS">Para todos</option>
               <option value="ESTUDIANTE">Solo Estudiantes</option>

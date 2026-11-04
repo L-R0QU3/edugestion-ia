@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/coexistence")
-@PreAuthorize("hasRole('DIRECCION')") // Todo este módulo es confidencial
+@PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'CONVIVENCIA', 'PSICOLOGO')")
 public class CoexistenceController {
 
     private final CasoConvivenciaRepository casos;
@@ -26,7 +26,6 @@ public class CoexistenceController {
     @PostMapping
     public ResponseEntity<?> crearCaso(@RequestBody Map<String, String> body, Authentication auth) {
         User reportador = users.findByEmail(auth.getName()).orElseThrow();
-        
         CasoConvivencia c = CasoConvivencia.builder()
             .estudianteId(Long.valueOf(body.get("estudianteId")))
             .reportadoPorId(reportador.getId())
@@ -35,7 +34,6 @@ public class CoexistenceController {
             .estado("REGISTRADO")
             .accionesTomadas("")
             .build();
-            
         return ResponseEntity.ok(casos.save(c));
     }
 

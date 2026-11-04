@@ -1,42 +1,58 @@
-# Contexto del Proyecto: EduGestión IA
+# 📋 CONTEXTO TÉCNICO Y DE TRASPASO: EduGestión IA (v1.0.1)
 
-## 1. Visión General
-EduGestión IA es una plataforma web modular para la gestión escolar (académica, administrativa, pedagógica y bibliotecaria). Actualmente nos encontramos en la **Versión 1.0.0 (MVP Funcional)**.
+# 📋 CONTEXTO TÉCNICO Y DE TRASPASO: EduGestión IA (v1.1.0)
 
-## 2. Stack Tecnológico y Arquitectura
-- **Frontend:** React 18 + Vite (usando CSS puro centralizado en `global.css`).
-- **Backend:** Java 17 + Spring Boot 3 + Spring Security (JWT).
+## 1. Visión General del Proyecto
+EduGestión IA es un sistema integral de gestión escolar. Actualmente nos encontramos en la **Versión 1.1.0**, una actualización mayor que introdujo el organigrama completo de roles del colegio, mejoras importantes de UI/UX (modales y notificaciones) y la Mesa de Ayuda.
+
+**Arquitectura:** Monolito modular en Java (Backend) + Microservicio independiente en Python (IA) + SPA en React (Frontend).
+
+## 2. Stack Tecnológico
+- **Frontend:** React 18, Vite, React Router. UI basada en CSS puro y variables globales (`global.css`). Uso de Notificaciones Toast y Ventanas Modales.
+- **Backend:** Java 17, Spring Boot 3, Spring Security (JWT), Hibernate, Maven.
 - **Base de Datos:** PostgreSQL 15.
-- **Microservicio de IA:** Python 3.11 + Flask.
-- **Infraestructura:** Docker + Docker Compose.
-- **Entorno de Desarrollo:** Windows 10 LTSC usando WSL2/Ubuntu para ejecutar Docker.
+- **IA:** Python 3.11 + Flask + OpenAI API (con modo fallback "mock").
+- **Infraestructura:** Docker y Docker Compose (frontend, backend, db, ai-service).
 
-## 3. Estado Actual (Lo que ya funciona en v1.0.0)
-- **Autenticación:** Login con JWT, roles (DIRECCION, DOCENTE, ESTUDIANTE, APODERADO, BIBLIOTECARIO).
-- **Gestión Académica:** CRUD de cursos, asignaturas, matrículas y asignación de docentes.
-- **Calificaciones:** Profesores pueden poner notas (1.0 a 7.0) y los alumnos pueden ver sus propias notas en su dashboard.
-- **Biblioteca:** Catálogo de libros, préstamo a estudiantes y registro de devoluciones (baja/sube el stock).
-- **IA:** Integración Frontend -> Java -> Python (Flask). El microservicio de Python simula la generación de preguntas y el backend las guarda en la BD.
-- **Dashboards:** Vistas diferenciadas según el rol del usuario.
-- **Sembrador de Datos (DataSeeder):** Al levantar por primera vez, crea automáticamente:
-  - `admin@edugestion.local` / `Admin123!Change` (DIRECCION)
-  - `carlos@example.com` / `EduGestion2026!` (DOCENTE)
-  - `juan@example.com` / `EduGestion2026!` (ESTUDIANTE)
+## 3. Organigrama de Roles (Nuevo)
+Implementamos la estructura real de un colegio:
+- `ADMINISTRADOR`: Control total del sistema.
+- `DIRECTOR`, `JEFE_UTP`, `COORDINADOR`: Equipo directivo. Ven el panel académico y de gestión.
+- `SECRETARIA`: Gestión de matrículas, estudiantes y usuarios.
+- `PROFESOR_JEFE`, `PROFESOR_ASIGNATURA`: Docentes. Ven notas, asistencia, anotaciones y horarios.
+- `CONVIVENCIA`, `PSICOLOGO`: Solo ven el módulo de Convivencia Escolar.
+- `BIBLIOTECARIO`: Solo ve la Biblioteca.
+- `ESTUDIANTE`, `APODERADO`: Vistas de consulta familiar.
 
-## 4. Notas Técnicas Importantes (Para no volver a tropezar)
-- **Docker y Redes:** El archivo `docker-compose.yml` tiene IPs estáticas (`172.20.0.x`) configuradas para que el backend Java pueda comunicarse con el microservicio Python sin errores de "I/O".
-- **Compilación:** Si se hacen cambios en Java o React y Docker falla, usar `docker compose up -d --build --no-cache backend frontend`.
-- **Base de Datos:** Los tipos de datos en Java (`Double`) coinciden con los de SQL (`DOUBLE PRECISION`) para evitar el error de validación de Hibernate.
-- **Reset de BD:** Si se necesita borrar todo para empezar de cero (cuidado, borra datos), usar `docker compose down -v`.
+## 4. Módulos y Funcionalidades Implementadas (v1.1.0)
+1. **Autenticación:** JWT y control de accesos granular (RBAC).
+2. **Gestión Académica:** Cursos, asignaturas, matrículas (con Ficha Profesional: dirección, salud, contacto de emergencia).
+3. **Estudiantes y Funcionarios:** Módulos separados. CRUD completo (Crear, Leer, Editar, Eliminar) con validación de RUT automática (Módulo 11).
+4. **Asistencia:** Pasar lista, alumno y apoderado consultan.
+5. **Anotaciones:** Libro de clases.
+6. **Convivencia Escolar:** Módulo exclusivo y confidencial para registrar casos y seguimientos.
+7. **Horarios:** Bloques de colores, editables y eliminables.
+8. **Comunicados:** Envío filtrado por roles.
+9. **Biblioteca:** Catálogo, préstamos y devoluciones.
+10. **Mesa de Ayuda (Tickets):** Los usuarios reportan problemas y el admin responde/cierra.
+11. **Bot Flotante:** Asistente en la esquina inferior derecha.
+12. **Dashboards Dinámicos:** Estadísticas reales por cada rol.
+13. **IA Real:** Generación de evaluaciones con OpenAI.
 
-## 5. Roadmap / Próximas Mejoras (En orden de prioridad)
-Queremos construir la **v1.1.0** con las siguientes mejoras, en este orden:
+## 5. Estado Actual y Pendientes (Roadmap v1.2.0)
+- ✅ **Completado:** Toda la base funcional, organigrama de roles, UI/UX (Modales/Toasts), Mesa de Ayuda.
+- ⏳ **Pendiente para la próxima versión:**
+  1. **RUTs:** Validación de RUTs reales (rechazar ceros a la izquierda).
+  2. **Reportes:** Exportar boletines de notas en PDF.
+  3. **Reglas Académicas:** Configurar ponderaciones de notas y promedios por semestre.
+  4. **IA:** Permitir editar las preguntas generadas antes de guardarlas.
 
-1. **IA Real:** Modificar el archivo `ai-service/app.py` para conectar con la API de OpenAI (o Gemini) usando una `API_KEY` real, en lugar de devolver textos simulados.
-2. **Módulo de Apoderados:** Habilitar la vista para que un apoderado inicie sesión y pueda ver las notas de su pupilo (requiere relacionar usuarios en la BD).
-3. **Módulo de Asistencia:** Permitir a los docentes pasar lista (Presente/Ausente/Tarde) a sus alumnos.
-4. **UI/UX:** Hacer el diseño 100% responsive (adaptable a celulares) y reemplazar los `alert()` nativos del navegador por notificaciones elegantes (Toasts).
+## 6. Instrucción para nuevos chats
+> "Hola. Estamos desarrollando EduGestión IA. Te adjunto el `CONTEXTO_PROYECTO.md` (v1.1.0). Actúa como mi Tech Lead. Queremos empezar a trabajar en la v1.2.0, específicamente en: **[INSERTAR TAREA, ej: Exportar boletines de notas a PDF]**."
 
-## 6. Cómo pedirle ayuda a la IA en un nuevo chat
-Si el chat se reinicia, copia y pega este mensaje junto con este archivo:
-> "Hola, estoy desarrollando el proyecto EduGestión IA. Te adjunto el archivo `CONTEXTO_PROYECTO.md` con todo el estado actual (v1.0.0). Quiero que actuemos como equipo para implementar la Fase 1 del Roadmap: **Integrar la IA real en Python**. ¿Por dónde empezamos?"
+## 7. Instrucciones para iniciar un nuevo chat con IA
+Si necesitas continuar el desarrollo en un nuevo chat (porque se acabó el límite o pasó el tiempo), copia y pega lo siguiente:
+
+> "Hola. Estamos desarrollando el proyecto **EduGestión IA**. Te adjunto el archivo `CONTEXTO_PROYECTO.md` que contiene el estado actual (v1.0.1), la arquitectura y las decisiones técnicas. 
+> 
+> A partir de ahora, actúa como mi **Tech Lead y Desarrollador Senior**. Queremos empezar a trabajar en la **v1.1.0**, específicamente en la siguiente tarea del Roadmap: **[INSERTAR TAREA AQUÍ, por ejemplo: Implementar notificaciones Toasts para reemplazar los alerts]**.

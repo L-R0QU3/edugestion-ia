@@ -16,7 +16,7 @@ public class AcademicController {
     private final AsignaturaRepository asignaturas;
     private final MatriculaRepository matriculas;
     private final CursoAsignaturaRepository cursoAsignaturas;
-    private final UserRepository users; // <-- FALTABA ESTO
+    private final UserRepository users;
 
     public AcademicController(CursoRepository cursos, AsignaturaRepository asignaturas, 
                               MatriculaRepository matriculas, CursoAsignaturaRepository cursoAsignaturas,
@@ -25,48 +25,54 @@ public class AcademicController {
         this.asignaturas = asignaturas;
         this.matriculas = matriculas;
         this.cursoAsignaturas = cursoAsignaturas;
-        this.users = users; // <-- Y ESTO
+        this.users = users;
     }
 
-    // --- CURSOS ---
     @GetMapping("/cursos")
     public List<Curso> listarCursos() { return cursos.findAll(); }
 
     @PostMapping("/cursos")
-    @PreAuthorize("hasRole('DIRECCION')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'SECRETARIA')")
     public ResponseEntity<Curso> crearCurso(@RequestBody Curso curso) {
         return ResponseEntity.ok(cursos.save(curso));
     }
 
-    // --- ASIGNATURAS ---
     @GetMapping("/asignaturas")
     public List<Asignatura> listarAsignaturas() { return asignaturas.findAll(); }
 
     @PostMapping("/asignaturas")
-    @PreAuthorize("hasRole('DIRECCION')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'SECRETARIA', 'JEFE_UTP', 'COORDINADOR')")
     public ResponseEntity<Asignatura> crearAsignatura(@RequestBody Asignatura asignatura) {
         return ResponseEntity.ok(asignaturas.save(asignatura));
     }
 
-    // --- MATRÍCULAS ---
     @PostMapping("/matriculas")
-    @PreAuthorize("hasRole('DIRECCION')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'SECRETARIA')")
     public ResponseEntity<?> matricular(@RequestBody Map<String, Object> body) {
         Long estudianteId = Long.valueOf(body.get("estudianteId").toString());
         Long cursoId = Long.valueOf(body.get("cursoId").toString());
         Integer anio = Integer.valueOf(body.get("anio").toString());
 
         if (matriculas.existsByEstudianteIdAndCursoIdAndAnio(estudianteId, cursoId, anio)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "El estudiante ya está matriculado."));
+            return ResponseEntity.badRequest().body(Map.of("error", "El estudiante ya está matriculado en este curso."));
         }
 
-        Matricula m = Matricula.builder().estudianteId(estudianteId).cursoId(cursoId).anio(anio).build();
+        Matricula m = Matricula.builder()
+            .estudianteId(estudianteId).cursoId(cursoId).anio(anio)
+            .colegioAnterior((String) body.getOrDefault("colegioAnterior", ""))
+            .direccion((String) body.getOrDefault("direccion", ""))
+            .comuna((String) body.getOrDefault("comuna", ""))
+            .telefonoEmergencia((String) body.getOrDefault("telefonoEmergencia", ""))
+            .contactoEmergencia((String) body.getOrDefault("contactoEmergencia", ""))
+            .enfermedades((String) body.getOrDefault("enfermedades", ""))
+            .observaciones((String) body.getOrDefault("observaciones", ""))
+            .build();
+            
         return ResponseEntity.ok(matriculas.save(m));
     }
 
-    // --- ASIGNACIÓN DOCENTE ---
     @PostMapping("/curso-asignaturas")
-    @PreAuthorize("hasRole('DIRECCION')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'SECRETARIA', 'JEFE_UTP', 'COORDINADOR')")
     public ResponseEntity<?> asignarDocente(@RequestBody Map<String, Object> body) {
         try {
             CursoAsignatura ca = CursoAsignatura.builder()
@@ -80,7 +86,6 @@ public class AcademicController {
         }
     }
 
-    // --- ESTUDIANTES POR CURSO ---
     @GetMapping("/cursos/{cursoId}/estudiantes")
     public List<User> estudiantesPorCurso(@PathVariable Long cursoId) {
         List<Long> estudianteIds = matriculas.findAll().stream()

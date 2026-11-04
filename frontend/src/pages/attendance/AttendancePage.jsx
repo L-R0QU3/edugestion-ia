@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { useToast } from '../../context/toast/ToastContext';
 
 export default function AttendancePage() {
+  const { showToast } = useToast();
   const [cursosAsig, setCursosAsig] = useState([]);
   const [cursoSel, setCursoSel] = useState('');
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [estudiantes, setEstudiantes] = useState([]);
-  const [asistencias, setAsistencias] = useState({}); // { estudianteId: 'PRESENTE' }
+  const [asistencias, setAsistencias] = useState({});
 
   useEffect(() => {
-    api('/grades/mis-asignaturas').then(setCursosAsig).catch(console.error);
+    api('/grades/mis-asignaturas').then(setCursosAsig).catch((err) => showToast(err.message, 'error'));
   }, []);
 
   const cargarCurso = async (cId, f) => {
@@ -22,10 +24,10 @@ export default function AttendancePage() {
       setEstudiantes(resEst);
       
       const mapAsist = {};
-      resEst.forEach(e => mapAsist[e.id] = 'PRESENTE'); // Por defecto todos presentes
+      resEst.forEach(e => mapAsist[e.id] = 'PRESENTE');
       resAsist.forEach(a => mapAsist[a.estudianteId] = a.estado);
       setAsistencias(mapAsist);
-    } catch (e) { alert(e.message); }
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   const guardar = async () => {
@@ -35,8 +37,8 @@ export default function AttendancePage() {
         estado: asistencias[estId]
       }));
       await api('/attendance', { method: 'POST', body: JSON.stringify({ cursoId: cursoSel, fecha, registros }) });
-      alert('Asistencia guardada correctamente');
-    } catch (e) { alert(e.message); }
+      showToast('Asistencia guardada correctamente', 'success');
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   return (
@@ -53,7 +55,7 @@ export default function AttendancePage() {
       </div>
 
       {estudiantes.length > 0 && (
-        <table style={{ width: '100%', background: 'white', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', background: 'white', borderCollapse: 'collapse', boxShadow: 'var(--shadow-sm)' }}>
           <thead>
             <tr style={{ background: 'var(--color-gray-100)', textAlign: 'left' }}>
               <th style={th}>Estudiante</th>

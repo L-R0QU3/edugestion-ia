@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { useToast } from '../../context/toast/ToastContext';
 
 export default function GuardianPage() {
+  const { showToast } = useToast();
   const [pupilos, setPupilos] = useState([]);
   const [seleccionado, setSeleccionado] = useState(null);
-  const [vista, setVista] = useState('notas'); // 'notas', 'asistencia' o 'anotaciones'
+  const [vista, setVista] = useState('notas');
   
   const [notas, setNotas] = useState([]);
   const [asistencias, setAsistencias] = useState([]);
   const [anotaciones, setAnotaciones] = useState([]);
 
   useEffect(() => {
-    api('/guardians/mis-pupilos').then(setPupilos).catch(console.error);
+    api('/guardians/mis-pupilos').then(setPupilos).catch((err) => showToast(err.message, 'error'));
   }, []);
 
   const verInfo = async (id, tipo) => {
@@ -28,7 +30,7 @@ export default function GuardianPage() {
         const res = await api(`/annotations/pupilo/${id}`);
         setAnotaciones(res);
       }
-    } catch (e) { alert(e.message); }
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   return (
@@ -36,7 +38,6 @@ export default function GuardianPage() {
       <h1 style={{ color: 'var(--color-navy)' }}>Portal de Apoderados</h1>
       
       <div style={{ display: 'flex', gap: 20, marginTop: 20 }}>
-        {/* LISTA DE PUPILOS */}
         <div style={{ flex: 1, background: 'white', padding: 20, borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}>
           <h3 style={{ marginTop: 0 }}>Mis Pupilos</h3>
           <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -54,7 +55,6 @@ export default function GuardianPage() {
           </ul>
         </div>
 
-        {/* PANEL DE INFORMACIÓN */}
         <div style={{ flex: 2, background: 'white', padding: 20, borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}>
           <h3 style={{ marginTop: 0 }}>
             {vista === 'notas' ? 'Calificaciones' : vista === 'asistencia' ? 'Registro de Asistencia' : 'Anotaciones'}
@@ -62,7 +62,6 @@ export default function GuardianPage() {
           
           {!seleccionado && <p>Selecciona una opción a la izquierda para ver la información.</p>}
 
-          {/* VISTA NOTAS */}
           {seleccionado && vista === 'notas' && (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
@@ -87,7 +86,6 @@ export default function GuardianPage() {
             </table>
           )}
 
-          {/* VISTA ASISTENCIA */}
           {seleccionado && vista === 'asistencia' && (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
@@ -116,7 +114,6 @@ export default function GuardianPage() {
             </table>
           )}
 
-          {/* VISTA ANOTACIONES */}
           {seleccionado && vista === 'anotaciones' && (
              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {anotaciones.map(a => (
@@ -136,5 +133,4 @@ export default function GuardianPage() {
     </div>
   );
 }
-
 const btnSmall = { padding: '6px 12px', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 'bold' };

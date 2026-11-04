@@ -21,9 +21,8 @@ public class GuardianController {
         this.users = users;
     }
 
-    // La Dirección vincula a un Apoderado con un Estudiante
     @PostMapping("/link")
-    @PreAuthorize("hasRole('DIRECCION')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'SECRETARIA')")
     public ResponseEntity<?> vincular(@RequestBody Map<String, String> body) {
         Long apoderadoId = Long.valueOf(body.get("apoderadoId"));
         Long estudianteId = Long.valueOf(body.get("estudianteId"));
@@ -42,7 +41,6 @@ public class GuardianController {
         return ResponseEntity.ok(guardianRepo.save(link));
     }
 
-    // El Apoderado consulta a sus pupilos (hijos)
     @GetMapping("/mis-pupilos")
     @PreAuthorize("hasRole('APODERADO')")
     public List<User> misPupilos(Authentication auth) {

@@ -1,44 +1,42 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { useToast } from '../../context/toast/ToastContext';
+import Modal from '../../components/Modal';
 
 export default function AcademicPage() {
+  const { showToast } = useToast();
   const [cursos, setCursos] = useState([]);
   const [asignaturas, setAsignaturas] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
   const [docentes, setDocentes] = useState([]);
   const [apoderados, setApoderados] = useState([]);
   
-  // Estados de formularios
-  const [nivel, setNivel] = useState('');
-  const [letra, setLetra] = useState('');
-  const [anio, setAnio] = useState('2026');
-  const [codigo, setCodigo] = useState('');
-  const [nombreAsig, setNombreAsig] = useState('');
-  
-  // Estados de matrícula
-  const [estudianteId, setEstudianteId] = useState('');
-  const [cursoId, setCursoId] = useState('');
+  const [nivel, setNivel] = useState(''); const [letra, setLetra] = useState(''); const [anio, setAnio] = useState('2026');
+  const [codigo, setCodigo] = useState(''); const [nombreAsig, setNombreAsig] = useState('');
+  const [asigCursoId, setAsigCursoId] = useState(''); const [asigAsignaturaId, setAsigAsignaturaId] = useState(''); const [asigDocenteId, setAsigDocenteId] = useState('');
 
-  // Estados de asignación docente
-  const [asigCursoId, setAsigCursoId] = useState('');
-  const [asigAsignaturaId, setAsigAsignaturaId] = useState('');
-  const [asigDocenteId, setAsigDocenteId] = useState('');
+  const [isMatriculaOpen, setIsMatriculaOpen] = useState(false);
+  const [matricula, setMatricula] = useState({
+    estudianteId: '', cursoId: '', colegioAnterior: '', direccion: '', comuna: '',
+    telefonoEmergencia: '', contactoEmergencia: '', enfermedades: '', observaciones: ''
+  });
 
   const cargarDatos = async () => {
     try {
-      const [resCursos, resAsig, resEst, resDoc, resApo] = await Promise.all([
-        api('/academic/cursos'),
-        api('/academic/asignaturas'),
-        api('/users?rol=ESTUDIANTE'),
-        api('/users?rol=DOCENTE'),
-        api('/users?rol=APODERADO') // <-- Agregado aquí
+      const [resCursos, resAsig, resEst, resDoc1, resDoc2, resApo] = await Promise.all([
+        api('/academic/cursos'), 
+        api('/academic/asignaturas'), 
+        api('/users?rol=ESTUDIANTE'), 
+        api('/users?rol=PROFESOR_ASIGNATURA'), // <-- CORREGIDO
+        api('/users?rol=PROFESOR_JEFE'),       // <-- CORREGIDO
+        api('/users?rol=APODERADO')
       ]);
-      setCursos(resCursos);
-      setAsignaturas(resAsig);
-      setEstudiantes(resEst);
-      setDocentes(resDoc);
-      setApoderados(resApo); // <-- Seteado aquí
-    } catch (e) { alert(e.message); }
+      setCursos(resCursos); 
+      setAsignaturas(resAsig); 
+      setEstudiantes(resEst); 
+      setDocentes([...resDoc1, ...resDoc2]); // Juntamos ambos tipos de docentes
+      setApoderados(resApo);
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   useEffect(() => { cargarDatos(); }, []);
@@ -47,36 +45,42 @@ export default function AcademicPage() {
     e.preventDefault();
     try {
       await api('/academic/cursos', { method: 'POST', body: JSON.stringify({ nivel, letra, anio: parseInt(anio) }) });
-      setNivel(''); setLetra(''); cargarDatos();
-    } catch (e) { alert(e.message); }
+      setNivel(''); setLetra(''); cargarDatos(); showToast('Curso creado', 'success');
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   const guardarAsignatura = async (e) => {
     e.preventDefault();
     try {
       await api('/academic/asignaturas', { method: 'POST', body: JSON.stringify({ codigo, nombre: nombreAsig }) });
-      setCodigo(''); setNombreAsig(''); cargarDatos();
-    } catch (e) { alert(e.message); }
-  };
-
-  const guardarMatricula = async (e) => {
-    e.preventDefault();
-    try {
-      await api('/academic/matriculas', { method: 'POST', body: JSON.stringify({ estudianteId, cursoId, anio: 2026 }) });
-      alert('Matriculado con éxito'); setEstudianteId(''); setCursoId('');
-    } catch (e) { alert(e.message); }
+      setCodigo(''); setNombreAsig(''); cargarDatos(); showToast('Asignatura creada', 'success');
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   const guardarAsignacion = async (e) => {
     e.preventDefault();
     try {
-      await api('/academic/curso-asignaturas', { 
-        method: 'POST', 
-        body: JSON.stringify({ cursoId: asigCursoId, asignaturaId: asigAsignaturaId, docenteId: asigDocenteId }) 
-      });
-      alert('Docente asignado con éxito');
-      setAsigCursoId(''); setAsigAsignaturaId(''); setAsigDocenteId('');
-    } catch (e) { alert(e.message); }
+      await api('/academic/curso-asignaturas', { method: 'POST', body: JSON.stringify({ cursoId: asigCursoId, asignaturaId: asigAsignaturaId, docenteId: asigDocenteId }) });
+      setAsigCursoId(''); setAsigAsignaturaId(''); setAsigDocenteId(''); showToast('Docente asignado', 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  const guardarMatricula = async (e) => {
+    e.preventDefault();
+    try {
+      await api('/academic/matriculas', { method: 'POST', body: JSON.stringify({ ...matricula, anio: 2026 }) });
+      setIsMatriculaOpen(false);
+      setMatricula({ estudianteId: '', cursoId: '', colegioAnterior: '', direccion: '', comuna: '', telefonoEmergencia: '', contactoEmergencia: '', enfermedades: '', observaciones: '' });
+      showToast('Estudiante matriculado con éxito', 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  };
+
+  const vincularApoderado = async (e) => {
+    e.preventDefault();
+    try {
+      await api('/guardians/link', { method: 'POST', body: JSON.stringify({ apoderadoId: e.target.apo.value, estudianteId: e.target.est.value }) });
+      e.target.reset(); showToast('Apoderado vinculado', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
   };
 
   return (
@@ -84,7 +88,6 @@ export default function AcademicPage() {
       <h1 style={{ color: 'var(--color-navy)' }}>Gestión Académica</h1>
       
       <div style={{ display: 'flex', gap: 24, marginTop: 20 }}>
-        {/* CURSOS */}
         <div style={{ flex: 1, background: 'white', padding: 20, borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}>
           <h2 style={{ fontSize: 18, marginTop: 0 }}>Cursos</h2>
           <form onSubmit={guardarCurso} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -98,7 +101,6 @@ export default function AcademicPage() {
           </ul>
         </div>
 
-        {/* ASIGNATURAS */}
         <div style={{ flex: 1, background: 'white', padding: 20, borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}>
           <h2 style={{ fontSize: 18, marginTop: 0 }}>Asignaturas</h2>
           <form onSubmit={guardarAsignatura} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -112,68 +114,90 @@ export default function AcademicPage() {
         </div>
       </div>
 
-      {/* MATRÍCULAS */}
-      <div style={{ background: 'white', padding: 20, borderRadius: 8, marginTop: 24, boxShadow: 'var(--shadow-sm)' }}>
-        <h2 style={{ fontSize: 18, marginTop: 0 }}>Matricular Estudiante</h2>
-        <form onSubmit={guardarMatricula} style={{ display: 'flex', gap: 10 }}>
-          <select required value={estudianteId} onChange={e => setEstudianteId(e.target.value)} style={inputStyle}>
-            <option value="">Estudiante...</option>
-            {estudiantes.map(u => <option key={u.id} value={u.id}>{u.nombres} {u.apellidos}</option>)}
-          </select>
-          <select required value={cursoId} onChange={e => setCursoId(e.target.value)} style={inputStyle}>
-            <option value="">Curso...</option>
-            {cursos.map(c => <option key={c.id} value={c.id}>{c.nivel} {c.letra}</option>)}
-          </select>
-          <button type="submit" style={btnStyle}>Matricular</button>
-        </form>
+      <div style={{ display: 'flex', gap: 24, marginTop: 24 }}>
+        <div style={{ flex: 1, background: 'white', padding: 20, borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}>
+          <h2 style={{ fontSize: 18, marginTop: 0 }}>Asignar Docente a Curso</h2>
+          <form onSubmit={guardarAsignacion} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <select required value={asigCursoId} onChange={e => setAsigCursoId(e.target.value)} style={inputStyle}>
+              <option value="">Curso...</option>
+              {cursos.map(c => <option key={c.id} value={c.id}>{c.nivel} {c.letra}</option>)}
+            </select>
+            <select required value={asigAsignaturaId} onChange={e => setAsigAsignaturaId(e.target.value)} style={inputStyle}>
+              <option value="">Asignatura...</option>
+              {asignaturas.map(a => <option key={a.id} value={a.id}>{a.codigo} - {a.nombre}</option>)}
+            </select>
+            <select required value={asigDocenteId} onChange={e => setAsigDocenteId(e.target.value)} style={inputStyle}>
+              <option value="">Docente...</option>
+              {docentes.map(d => <option key={d.id} value={d.id}>{d.nombres} {d.apellidos}</option>)}
+            </select>
+            <button type="submit" style={btnStyle}>Asignar</button>
+          </form>
+        </div>
+
+        <div style={{ flex: 1, background: 'white', padding: 20, borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}>
+          <h2 style={{ fontSize: 18, marginTop: 0 }}>Vincular Apoderado</h2>
+          <form onSubmit={vincularApoderado} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <select name="apo" required style={inputStyle}>
+              <option value="">Apoderado...</option>
+              {apoderados.map(a => <option key={a.id} value={a.id}>{a.nombres} {a.apellidos}</option>)}
+            </select>
+            <select name="est" required style={inputStyle}>
+              <option value="">Estudiante...</option>
+              {estudiantes.map(e => <option key={e.id} value={e.id}>{e.nombres} {e.apellidos}</option>)}
+            </select>
+            <button type="submit" style={btnStyle}>Vincular</button>
+          </form>
+        </div>
       </div>
 
-      {/* ASIGNACIÓN DOCENTE */}
-      <div style={{ background: 'white', padding: 20, borderRadius: 8, marginTop: 24, boxShadow: 'var(--shadow-sm)' }}>
-        <h2 style={{ fontSize: 18, marginTop: 0 }}>Asignar Docente a Curso</h2>
-        <form onSubmit={guardarAsignacion} style={{ display: 'flex', gap: 10 }}>
-          <select required value={asigCursoId} onChange={e => setAsigCursoId(e.target.value)} style={inputStyle}>
-            <option value="">Curso...</option>
-            {cursos.map(c => <option key={c.id} value={c.id}>{c.nivel} {c.letra}</option>)}
-          </select>
-          <select required value={asigAsignaturaId} onChange={e => setAsigAsignaturaId(e.target.value)} style={inputStyle}>
-            <option value="">Asignatura...</option>
-            {asignaturas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-          </select>
-          <select required value={asigDocenteId} onChange={e => setAsigDocenteId(e.target.value)} style={inputStyle}>
-            <option value="">Docente...</option>
-            {docentes.map(d => <option key={d.id} value={d.id}>{d.nombres} {d.apellidos}</option>)}
-          </select>
-          <button type="submit" style={btnStyle}>Asignar</button>
-        </form>
+      <div style={{ marginTop: 30 }}>
+        <button onClick={() => setIsMatriculaOpen(true)} style={{...btnStyle, padding: '15px 30px', fontSize: 16}}>
+          📝 Abrir Ficha de Matrícula Profesional
+        </button>
       </div>
 
-      {/* VINCULAR APODERADO */}
-      <div style={{ background: 'white', padding: 20, borderRadius: 8, marginTop: 24, boxShadow: 'var(--shadow-sm)' }}>
-        <h2 style={{ fontSize: 18, marginTop: 0 }}>Vincular Apoderado con Estudiante</h2>
-        <form onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              await api('/guardians/link', { method: 'POST', body: JSON.stringify({ apoderadoId: e.target.apo.value, estudianteId: e.target.est.value }) });
-              alert('Vinculación exitosa');
-              e.target.reset();
-            } catch (err) { alert(err.message); }
-        }} style={{ display: 'flex', gap: 10 }}>
-          <select name="apo" required style={inputStyle}>
-            <option value="">Seleccione Apoderado...</option>
-            {apoderados.map(a => <option key={a.id} value={a.id}>{a.nombres} {a.apellidos}</option>)}
-          </select>
-          <select name="est" required style={inputStyle}>
-            <option value="">Seleccione Estudiante...</option>
-            {estudiantes.map(e => <option key={e.id} value={e.id}>{e.nombres} {e.apellidos}</option>)}
-          </select>
-          <button type="submit" style={btnStyle}>Vincular</button>
+      <Modal isOpen={isMatriculaOpen} onClose={() => setIsMatriculaOpen(false)} title="Ficha de Matrícula Escolar">
+        <form onSubmit={guardarMatricula} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+          <div style={{ display: 'flex', gap: 15 }}>
+            <select required value={matricula.estudianteId} onChange={e => setMatricula({...matricula, estudianteId: e.target.value})} style={inp}>
+              <option value="">Seleccione Estudiante...</option>
+              {estudiantes.map(e => <option key={e.id} value={e.id}>{e.nombres} {e.apellidos}</option>)}
+            </select>
+            <select required value={matricula.cursoId} onChange={e => setMatricula({...matricula, cursoId: e.target.value})} style={inp}>
+              <option value="">Seleccione Curso...</option>
+              {cursos.map(c => <option key={c.id} value={c.id}>{c.nivel} {c.letra}</option>)}
+            </select>
+          </div>
+
+          <h4 style={{ margin: '10px 0 0 0', color: 'var(--color-navy)' }}>Antecedentes Personales</h4>
+          <input placeholder="Colegio de Procedencia" value={matricula.colegioAnterior} onChange={e => setMatricula({...matricula, colegioAnterior: e.target.value})} style={inp} />
+          <div style={{ display: 'flex', gap: 15 }}>
+            <input placeholder="Dirección (Calle y Número)" value={matricula.direccion} onChange={e => setMatricula({...matricula, direccion: e.target.value})} style={{...inp, flex: 2}} />
+            <input placeholder="Comuna" value={matricula.comuna} onChange={e => setMatricula({...matricula, comuna: e.target.value})} style={{...inp, flex: 1}} />
+          </div>
+
+          <h4 style={{ margin: '10px 0 0 0', color: 'var(--color-navy)' }}>Contacto de Emergencia</h4>
+          <div style={{ display: 'flex', gap: 15 }}>
+            <input placeholder="Nombre de Contacto" value={matricula.contactoEmergencia} onChange={e => setMatricula({...matricula, contactoEmergencia: e.target.value})} style={inp} />
+            <input placeholder="Teléfono" value={matricula.telefonoEmergencia} onChange={e => setMatricula({...matricula, telefonoEmergencia: e.target.value})} style={inp} />
+          </div>
+
+          <h4 style={{ margin: '10px 0 0 0', color: 'var(--color-navy)' }}>Información Médica</h4>
+          <textarea placeholder="Alergias, enfermedades crónicas, etc. (Opcional)" value={matricula.enfermedades} onChange={e => setMatricula({...matricula, enfermedades: e.target.value})} style={{...inp, height: 60, resize: 'none'}} />
+          <textarea placeholder="Observaciones adicionales" value={matricula.observaciones} onChange={e => setMatricula({...matricula, observaciones: e.target.value})} style={{...inp, height: 60, resize: 'none'}} />
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            <button type="button" onClick={() => setIsMatriculaOpen(false)} style={{...btnSecondary, flex: 1}}>Cancelar</button>
+            <button type="submit" style={{...btnStyle, flex: 1}}>Guardar Matrícula</button>
+          </div>
         </form>
-      </div>
+      </Modal>
 
     </div>
   );
 }
-const inputStyle = { padding: '8px', border: '1px solid #ccc', borderRadius: 4, flex: 1 };
-const btnStyle = { padding: '8px 16px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' };
-const liStyle = { padding: '8px 0', borderBottom: '1px solid #eee' };
+const inputStyle = { padding: '10px', border: '1px solid #cbd5e1', borderRadius: 6, flex: 1, fontSize: 14 };
+const inp = { padding: '12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14, background: '#f8fafc' };
+const btnStyle = { padding: '10px 20px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold', fontSize: 14 };
+const btnSecondary = { padding: '10px 20px', background: '#e2e8f0', color: '#333', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold', fontSize: 14 };
+const liStyle = { padding: '8px 0', borderBottom: '1px solid #eee', fontSize: 14 };

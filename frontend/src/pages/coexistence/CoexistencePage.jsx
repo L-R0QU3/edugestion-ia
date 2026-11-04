@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { useToast } from '../../context/toast/ToastContext';
 
 export default function CoexistencePage() {
+  const { showToast } = useToast();
   const [casos, setCasos] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
   
@@ -17,7 +19,7 @@ export default function CoexistencePage() {
       ]);
       setCasos(resCasos);
       setEstudiantes(resEst);
-    } catch (e) { alert(e.message); }
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   useEffect(() => { cargarDatos(); }, []);
@@ -29,8 +31,8 @@ export default function CoexistencePage() {
       setForm({ categoria: 'CONFLICTO', descripcion: '' });
       e.target.reset();
       cargarDatos();
-      alert('Caso registrado');
-    } catch (err) { alert(err.message); }
+      showToast('Caso registrado', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
   };
 
   const actualizarEstado = async (id, nuevoEstado) => {
@@ -39,8 +41,8 @@ export default function CoexistencePage() {
       setEditando(null);
       setAcciones('');
       cargarDatos();
-      alert('Caso actualizado');
-    } catch (err) { alert(err.message); }
+      showToast('Caso actualizado', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
   };
 
   return (

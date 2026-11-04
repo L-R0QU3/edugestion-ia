@@ -23,7 +23,7 @@ public class LibraryController {
     public List<Libro> listarLibros() { return libros.findAll(); }
 
     @PostMapping("/libros")
-    @PreAuthorize("hasAnyRole('DIRECCION', 'BIBLIOTECARIO')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'BIBLIOTECARIO')")
     public ResponseEntity<Libro> crearLibro(@RequestBody Libro libro) {
         libro.setEjemplaresDisponibles(libro.getEjemplaresTotales());
         return ResponseEntity.ok(libros.save(libro));
@@ -34,7 +34,7 @@ public class LibraryController {
     public List<Prestamo> listarPrestamos() { return prestamos.findAll(); }
 
     @PostMapping("/prestamos")
-    @PreAuthorize("hasAnyRole('DIRECCION', 'BIBLIOTECARIO')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'BIBLIOTECARIO')")
     public ResponseEntity<?> prestar(@RequestBody Map<String, Object> body) {
         Long libroId = Long.valueOf(body.get("libroId").toString());
         Long usuarioId = Long.valueOf(body.get("usuarioId").toString());
@@ -56,7 +56,7 @@ public class LibraryController {
     }
 
     @PostMapping("/prestamos/{id}/devolver")
-    @PreAuthorize("hasAnyRole('DIRECCION', 'BIBLIOTECARIO')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'BIBLIOTECARIO')")
     public ResponseEntity<?> devolver(@PathVariable Long id) {
         Prestamo prestamo = prestamos.findById(id).orElseThrow();
         if ("DEVUELTO".equals(prestamo.getEstado())) {

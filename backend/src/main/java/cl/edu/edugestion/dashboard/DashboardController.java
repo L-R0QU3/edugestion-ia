@@ -46,43 +46,45 @@ public class DashboardController {
     public Map<String, Object> getStats(Authentication auth) {
         User user = users.findByEmail(auth.getName()).orElseThrow();
         Map<String, Object> stats = new HashMap<>();
+        Role rol = user.getRol();
 
-        if (user.getRol() == Role.DIRECCION) {
+        if (rol == Role.ADMINISTRADOR || rol == Role.DIRECTOR) {
             stats.put("totalEstudiantes", users.findAll().stream().filter(u -> u.getRol() == Role.ESTUDIANTE).count());
-            stats.put("totalDocentes", users.findAll().stream().filter(u -> u.getRol() == Role.DOCENTE).count());
+            stats.put("totalDocentes", users.findAll().stream().filter(u -> u.getRol() == Role.PROFESOR_JEFE || u.getRol() == Role.PROFESOR_ASIGNATURA).count());
             stats.put("totalCursos", cursos.count());
             stats.put("totalLibros", libros.count());
             stats.put("prestamosActivos", prestamos.findAll().stream().filter(p -> "ACTIVO".equals(p.getEstado())).count());
         } 
-        else if (user.getRol() == Role.BIBLIOTECARIO) {
+        else if (rol == Role.JEFE_UTP || rol == Role.COORDINADOR || rol == Role.SECRETARIA) {
+            stats.put("totalEstudiantes", users.findAll().stream().filter(u -> u.getRol() == Role.ESTUDIANTE).count());
+            stats.put("totalDocentes", users.findAll().stream().filter(u -> u.getRol() == Role.PROFESOR_JEFE || u.getRol() == Role.PROFESOR_ASIGNATURA).count());
+            stats.put("totalCursos", cursos.count());
+        }
+        else if (rol == Role.BIBLIOTECARIO) {
             stats.put("totalLibros", libros.count());
             stats.put("prestamosActivos", prestamos.findAll().stream().filter(p -> "ACTIVO".equals(p.getEstado())).count());
         }
-        else if (user.getRol() == Role.ESTUDIANTE) {
-            // Promedio de notas
+        else if (rol == Role.ESTUDIANTE) {
             List<Double> notas = calificaciones.findAll().stream()
                 .filter(c -> c.getEstudianteId().equals(user.getId()))
                 .map(c -> c.getNota()).toList();
             double promedio = notas.isEmpty() ? 0.0 : notas.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-            stats.put("promedio", Math.round(promedio * 10.0) / 10.0); // 1 decimal
-            
-            // Faltas
-            long ausencias = asistencias.findByEstudianteId(user.getId()).stream()
-                .filter(a -> "AUSENTE".equals(a.getEstado())).count();
+            stats.put("promedio", Math.round(promedio * 10.0) / 10.0);
+            long ausencias = asistencias.findByEstudianteId(user.getId()).stream().filter(a -> "AUSENTE".equals(a.getEstado())).count();
             stats.put("ausencias", ausencias);
-            
-            // Libros prestados
-            long librosPrestados = prestamos.findAll().stream()
-                .filter(p -> p.getUsuarioId().equals(user.getId()) && "ACTIVO".equals(p.getEstado())).count();
+            long librosPrestados = prestamos.findAll().stream().filter(p -> p.getUsuarioId().equals(user.getId()) && "ACTIVO".equals(p.getEstado())).count();
             stats.put("librosPrestados", librosPrestados);
         }
-        else if (user.getRol() == Role.DOCENTE) {
-            stats.put("cursosAsignados", matriculas.count()); // Simplificación
-            stats.put("totalAnotaciones", 0); // Se puede implementar después
+        else if (rol == Role.PROFESOR_JEFE || rol == Role.PROFESOR_ASIGNATURA) {
+            stats.put("cursosAsignados", matriculas.count());
+            stats.put("totalAnotaciones", 0); 
         }
-        else if (user.getRol() == Role.APODERADO) {
+        else if (rol == Role.APODERADO) {
             var pupilos = guardianRepo.findByApoderadoId(user.getId());
             stats.put("pupilos", pupilos.size());
+        }
+        else if (rol == Role.CONVIVENCIA || rol == Role.PSICOLOGO) {
+            stats.put("casosActivos", 0); 
         }
 
         return stats;

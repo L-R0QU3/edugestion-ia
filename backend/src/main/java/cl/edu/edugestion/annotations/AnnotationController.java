@@ -26,7 +26,7 @@ public class AnnotationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('DOCENTE')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'JEFE_UTP', 'COORDINADOR', 'PROFESOR_JEFE', 'PROFESOR_ASIGNATURA')")
     public ResponseEntity<?> crearAnotacion(@RequestBody Map<String, Object> body, Authentication auth) {
         User docente = users.findByEmail(auth.getName()).orElseThrow();
         
@@ -42,7 +42,7 @@ public class AnnotationController {
     }
 
     @GetMapping("/estudiante/{estudianteId}")
-    @PreAuthorize("hasAnyRole('DOCENTE', 'DIRECCION')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'JEFE_UTP', 'COORDINADOR', 'PROFESOR_JEFE', 'PROFESOR_ASIGNATURA', 'CONVIVENCIA', 'PSICOLOGO')")
     public List<Anotacion> verPorEstudiante(@PathVariable Long estudianteId) {
         return anotaciones.findByEstudianteIdOrderByFechaDesc(estudianteId);
     }
@@ -52,7 +52,7 @@ public class AnnotationController {
     public List<Anotacion> misAnotaciones(Authentication auth) {
         User est = users.findByEmail(auth.getName()).orElseThrow();
         return anotaciones.findByEstudianteIdOrderByFechaDesc(est.getId()).stream()
-            .filter(Anotacion::isVisibleApoderado) // El alumno ve las mismas que el apoderado
+            .filter(Anotacion::isVisibleApoderado)
             .toList();
     }
 
@@ -64,7 +64,6 @@ public class AnnotationController {
             return ResponseEntity.status(403).body(Map.of("error", "No autorizado"));
         }
         
-        // El apoderado solo ve las que son visibles para él
         return ResponseEntity.ok(anotaciones.findByEstudianteIdOrderByFechaDesc(estudianteId).stream()
             .filter(Anotacion::isVisibleApoderado)
             .toList());

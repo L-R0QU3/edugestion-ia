@@ -18,16 +18,16 @@ public class ScheduleController {
 
     private final HorarioRepository horarios;
     private final UserRepository users;
-    private final MatriculaRepository matriculas; // <-- NUEVO
+    private final MatriculaRepository matriculas;
 
     public ScheduleController(HorarioRepository horarios, UserRepository users, MatriculaRepository matriculas) {
         this.horarios = horarios;
         this.users = users;
-        this.matriculas = matriculas; // <-- NUEVO
+        this.matriculas = matriculas;
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('DIRECCION')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'SECRETARIA', 'JEFE_UTP', 'COORDINADOR')")
     public ResponseEntity<?> crearHorario(@RequestBody Map<String, String> body) {
         try {
             Horario h = Horario.builder()
@@ -45,28 +45,48 @@ public class ScheduleController {
         }
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'SECRETARIA', 'JEFE_UTP', 'COORDINADOR')")
+    public ResponseEntity<?> actualizarHorario(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        try {
+            Horario h = horarios.findById(id).orElseThrow();
+            h.setAsignaturaId(Long.valueOf(body.get("asignaturaId")));
+            h.setDocenteId(Long.valueOf(body.get("docenteId")));
+            h.setDiaSemana(body.get("diaSemana").toUpperCase());
+            h.setHoraInicio(java.time.LocalTime.parse(body.get("horaInicio")));
+            h.setHoraFin(java.time.LocalTime.parse(body.get("horaFin")));
+            h.setSala(body.get("sala"));
+            return ResponseEntity.ok(horarios.save(h));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Error al actualizar: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'DIRECTOR', 'SECRETARIA', 'JEFE_UTP', 'COORDINADOR')")
+    public ResponseEntity<?> eliminarHorario(@PathVariable Long id) {
+        horarios.deleteById(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Bloque eliminado"));
+    }
+
     @GetMapping("/curso/{cursoId}")
     public List<Horario> verPorCurso(@PathVariable Long cursoId) {
         return horarios.findByCursoId(cursoId);
     }
 
     @GetMapping("/mis-clases")
-    @PreAuthorize("hasRole('DOCENTE')")
+    @PreAuthorize("hasAnyRole('PROFESOR_JEFE', 'PROFESOR_ASIGNATURA')")
     public List<Horario> misClases(Authentication auth) {
         User docente = users.findByEmail(auth.getName()).orElseThrow();
         return horarios.findByDocenteId(docente.getId());
     }
 
-    // NUEVO ENDPOINT PARA ESTUDIANTES
     @GetMapping("/mis-clases-estudiante")
     @PreAuthorize("hasRole('ESTUDIANTE')")
     public List<Horario> misClasesEstudiante(Authentication auth) {
         User estudiante = users.findByEmail(auth.getName()).orElseThrow();
-        // Buscamos el curso en el que está matriculado el alumno
         List<Matricula> misMatriculas = matriculas.findByEstudianteId(estudiante.getId());
-        
         if (misMatriculas.isEmpty()) return List.of();
-        
         Long cursoId = misMatriculas.get(0).getCursoId();
         return horarios.findByCursoId(cursoId);
     }

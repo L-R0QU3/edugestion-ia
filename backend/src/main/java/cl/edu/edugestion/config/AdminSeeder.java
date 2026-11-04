@@ -34,7 +34,7 @@ public class AdminSeeder implements CommandLineRunner {
         .apellidos("Sistema")
         .email(email)
         .passwordHash(encoder.encode(password))
-        .rol(Role.DIRECCION)
+        .rol(Role.ADMINISTRADOR) // <-- AQUÍ ESTABA EL ERROR (SOSTENEDOR), AHORA ES ADMINISTRADOR
         .activo(true)
         .build());
   }

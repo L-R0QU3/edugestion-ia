@@ -159,3 +159,32 @@ CREATE TABLE casos_convivencia (
   fecha_registro TIMESTAMPTZ DEFAULT now(),
   fecha_actualizacion TIMESTAMPTZ
 );
+
+DROP TABLE IF EXISTS matriculas;
+
+CREATE TABLE matriculas (
+  id BIGSERIAL PRIMARY KEY,
+  estudiante_id BIGINT NOT NULL REFERENCES usuarios(id),
+  curso_id BIGINT NOT NULL REFERENCES cursos(id),
+  anio INT NOT NULL,
+  colegio_anterior VARCHAR(150),
+  direccion VARCHAR(200),
+  comuna VARCHAR(100),
+  telefono_emergencia VARCHAR(50),
+  contacto_emergencia VARCHAR(100),
+  enfermedades TEXT,
+  observaciones TEXT,
+  fecha_registro TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(estudiante_id, curso_id, anio)
+);
+
+CREATE TABLE tickets_soporte (
+  id BIGSERIAL PRIMARY KEY,
+  usuario_id BIGINT NOT NULL REFERENCES usuarios(id),
+  asunto VARCHAR(150) NOT NULL,
+  descripcion TEXT NOT NULL,
+  estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO', -- ABIERTO, EN_PROCESO, CERRADO
+  respuesta_admin TEXT,
+  fecha_creacion TIMESTAMPTZ DEFAULT now(),
+  fecha_actualizacion TIMESTAMPTZ
+);

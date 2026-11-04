@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/toast/ToastContext';
 
 export default function LibraryPage() {
   const { user } = useAuth();
-  const [vista, setVista] = useState('libros'); // 'libros' o 'prestamos'
+  const { showToast } = useToast();
+  const [vista, setVista] = useState('libros');
   
   const [libros, setLibros] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
@@ -24,7 +26,7 @@ export default function LibraryPage() {
       setLibros(resLibros);
       setPrestamos(resPrestamos);
       setEstudiantes(resEst);
-    } catch (e) { console.error(e); }
+    } catch (e) { showToast(e.message, 'error'); }
   };
 
   useEffect(() => { cargarDatos(); }, []);
@@ -35,25 +37,26 @@ export default function LibraryPage() {
       await api('/library/libros', { method: 'POST', body: JSON.stringify(formLibro) });
       setFormLibro({ titulo: '', autor: '', isbn: '', anio: '2024', categoria: 'General', ejemplaresTotales: 1 });
       cargarDatos();
-    } catch (err) { alert(err.message); }
+      showToast('Libro agregado al catálogo', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
   };
 
   const registrarPrestamo = async (e) => {
     e.preventDefault();
     try {
       await api('/library/prestamos', { method: 'POST', body: JSON.stringify({ libroId: prestarId, usuarioId: estudianteId }) });
-      alert('Préstamo registrado con éxito');
       setPrestarId(null); setEstudianteId('');
       cargarDatos();
-    } catch (err) { alert(err.message); }
+      showToast('Préstamo registrado con éxito', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
   };
 
   const devolverLibro = async (id) => {
     try {
       await api(`/library/prestamos/${id}/devolver`, { method: 'POST' });
-      alert('Libro devuelto con éxito');
       cargarDatos();
-    } catch (err) { alert(err.message); }
+      showToast('Libro devuelto con éxito', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
   };
 
   const esAdminOBiblio = user?.rol === 'DIRECCION' || user?.rol === 'BIBLIOTECARIO';
@@ -62,17 +65,15 @@ export default function LibraryPage() {
     <div>
       <h1 style={{ color: 'var(--color-navy)' }}>Gestión de Biblioteca</h1>
       
-      {/* Pestañas */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button onClick={() => setVista('libros')} style={{...btnTab, background: vista === 'libros' ? 'var(--color-primary)' : 'white', color: vista === 'libros' ? 'white' : 'var(--color-navy)'}}>Catálogo de Libros</button>
         <button onClick={() => setVista('prestamos')} style={{...btnTab, background: vista === 'prestamos' ? 'var(--color-primary)' : 'white', color: vista === 'prestamos' ? 'white' : 'var(--color-navy)'}}>Préstamos Activos</button>
       </div>
 
-      {/* VISTA 1: LIBROS */}
       {vista === 'libros' && (
         <>
           {esAdminOBiblio && (
-            <form onSubmit={guardarLibro} style={{ background: 'white', padding: 20, borderRadius: 8, marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <form onSubmit={guardarLibro} style={{ background: 'white', padding: 20, borderRadius: 8, marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', boxShadow: 'var(--shadow-sm)' }}>
               <input placeholder="Título" required value={formLibro.titulo} onChange={e => setFormLibro({...formLibro, titulo: e.target.value})} style={inp} />
               <input placeholder="Autor" required value={formLibro.autor} onChange={e => setFormLibro({...formLibro, autor: e.target.value})} style={inp} />
               <input placeholder="ISBN" value={formLibro.isbn} onChange={e => setFormLibro({...formLibro, isbn: e.target.value})} style={inp} />
@@ -81,7 +82,7 @@ export default function LibraryPage() {
             </form>
           )}
 
-          <table style={{ width: '100%', background: 'white', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', background: 'white', borderCollapse: 'collapse', boxShadow: 'var(--shadow-sm)' }}>
             <thead>
               <tr style={{ background: 'var(--color-gray-100)', textAlign: 'left' }}>
                 <th style={th}>Título</th><th style={th}>Autor</th><th style={th}>Disponibles</th>
@@ -106,9 +107,8 @@ export default function LibraryPage() {
         </>
       )}
 
-      {/* VISTA 2: PRÉSTAMOS */}
       {vista === 'prestamos' && (
-        <table style={{ width: '100%', background: 'white', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', background: 'white', borderCollapse: 'collapse', boxShadow: 'var(--shadow-sm)' }}>
           <thead>
             <tr style={{ background: 'var(--color-gray-100)', textAlign: 'left' }}>
               <th style={th}>Libro</th><th style={th}>Alumno</th><th style={th}>Fecha Préstamo</th><th style={th}>Estado</th>
@@ -139,11 +139,10 @@ export default function LibraryPage() {
         </table>
       )}
 
-      {/* MODAL PARA PRESTAR */}
       {prestarId && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <form onSubmit={registrarPrestamo} style={{ background: 'white', padding: 30, borderRadius: 8, width: 400 }}>
-            <h3>Prestar Libro</h3>
+            <h3 style={{ marginTop: 0 }}>Prestar Libro</h3>
             <p>Selecciona al estudiante que llevará el libro:</p>
             <select required value={estudianteId} onChange={e => setEstudianteId(e.target.value)} style={{...inp, width: '100%', marginBottom: 15}}>
               <option value="">Estudiante...</option>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { useToast } from '../../context/toast/ToastContext';
 
 export default function AnnotationsPage() {
+  const { showToast } = useToast();
   const [estudiantes, setEstudiantes] = useState([]);
   const [seleccionado, setSeleccionado] = useState('');
   const [anotaciones, setAnotaciones] = useState([]);
@@ -11,7 +13,7 @@ export default function AnnotationsPage() {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    api('/users?rol=ESTUDIANTE').then(setEstudiantes).catch(console.error);
+    api('/users?rol=ESTUDIANTE').then(setEstudiantes).catch((err) => showToast(err.message, 'error'));
   }, []);
 
   const cargarAnotaciones = async (id) => {
@@ -30,8 +32,8 @@ export default function AnnotationsPage() {
       });
       setDescripcion('');
       cargarAnotaciones(seleccionado);
-      alert('Anotación guardada');
-    } catch (err) { alert(err.message); }
+      showToast('Anotación guardada', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
   };
 
   return (
@@ -84,4 +86,4 @@ export default function AnnotationsPage() {
   );
 }
 const inp = { padding: '10px', border: '1px solid #ccc', borderRadius: 4 };
-const btn = { padding: '10px 20px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' };
+const btn = { padding: '10px 20px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 'bold' };
